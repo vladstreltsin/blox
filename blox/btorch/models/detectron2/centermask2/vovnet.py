@@ -1,5 +1,5 @@
-from .....btorch import nn as bnn
-from .....core.block import Function, AtomicFunction
+from blox.btorch import nn as bnn
+from blox.core.block import Function, AtomicFunction
 
 
 # # Copyright (c) Youngwan Lee (ETRI) All Rights Reserved.

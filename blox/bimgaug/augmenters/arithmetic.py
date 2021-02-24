@@ -1,5 +1,5 @@
 from imgaug.augmenters import arithmetic
-from ..augmenter import _AtomicAugmenter
+from blox.bimgaug.augmenter import _AtomicAugmenter
 
 
 class Add(_AtomicAugmenter):

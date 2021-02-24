@@ -1,5 +1,5 @@
-from .module import TorchModule
-from ..core.block import Block
+from blox.btorch.module import TorchModule
+from blox.core.block import Block
 from torch import nn
 
 

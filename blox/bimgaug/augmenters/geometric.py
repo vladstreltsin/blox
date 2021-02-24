@@ -1,5 +1,5 @@
 from imgaug.augmenters import geometric
-from ..augmenter import _AtomicAugmenter, _CompositeAugmenter
+from blox.bimgaug.augmenter import _AtomicAugmenter, _CompositeAugmenter
 from functools import partial
 
 

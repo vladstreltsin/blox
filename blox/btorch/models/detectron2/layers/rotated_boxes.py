@@ -1,5 +1,5 @@
 import detectron2.layers.rotated_boxes as rb
-from .....core.block import AtomicFunction
+from blox.core.block import AtomicFunction
 
 
 class pairwise_iou_rotated(AtomicFunction):

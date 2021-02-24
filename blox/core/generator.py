@@ -1,9 +1,9 @@
-from .block import Block, Port, BlockError
-from .engine import Session, Engine, PortPuller
+from blox.core.block import Block, Port, BlockError
+from blox.core.engine import Session, Engine, PortPuller
 import asyncio
 import typing as T
-from ..utils import maybe_or, identity
-from ..maybe import Something, Nothing, maybe
+from blox.utils import maybe_or, identity
+from blox.maybe import Something, Nothing, maybe
 import threading
 import time
 from functools import partial

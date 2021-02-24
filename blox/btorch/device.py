@@ -1,9 +1,9 @@
 from __future__ import annotations
-from ..core.device import BlockDevice
-from .module import TorchModule, TorchModuleError
+from blox.core.device import BlockDevice
+from blox.btorch.module import TorchModule, TorchModuleError
 import torch
-from ..utils import raise_if, maybe_or
-from ..core.block import Port, Block
+from blox.utils import raise_if, maybe_or
+from blox.core.block import Port, Block
 import typing as T
 
 

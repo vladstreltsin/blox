@@ -3,7 +3,7 @@ import typing as T
 from abc import ABC, abstractmethod
 from itertools import takewhile
 from anytree import NodeMixin
-from .exceptions import PersisterError
+from blox.core.exceptions import PersisterError
 from typing import TYPE_CHECKING
 import logging
 

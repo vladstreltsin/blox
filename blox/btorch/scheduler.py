@@ -1,9 +1,9 @@
 from functools import partial
 from torch.optim import lr_scheduler as lrs
 import typing as T
-from ..utils import maybe_error
+from blox.utils import maybe_error
 
-from ..core.engine import SessionError
+from blox.core.engine import SessionError
 
 
 class TorchSchedulerError(SessionError):

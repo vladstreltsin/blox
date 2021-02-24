@@ -2,8 +2,8 @@ from __future__ import annotations
 import asyncio
 import threading
 from anytree import NodeMixin
-from ._block import Port, _Block, _BlockPortsSection
-from ..utils import maybe_error, maybe_raise, maybe_bind
+from blox.core._block import Port, _Block, _BlockPortsSection
+from blox.utils import maybe_error, maybe_raise, maybe_bind
 import uuid
 import typing as T
 from itertools import chain
@@ -11,10 +11,10 @@ from more_itertools import prepend
 from scalpl import Cut
 from concurrent.futures import Future
 from collections import OrderedDict
-from ..maybe import Something, Nothing
+from blox.maybe import Something, Nothing
 from concurrent.futures import ThreadPoolExecutor
 import loky
-from .device import BlockDevice, DefaultDevice
+from blox.core.device import BlockDevice, DefaultDevice
 
 import uvloop
 uvloop.install()

@@ -1,5 +1,5 @@
 import torch
-from ..core.block import AtomicFunction
+from blox.core.block import AtomicFunction
 
 
 class Concat(AtomicFunction):

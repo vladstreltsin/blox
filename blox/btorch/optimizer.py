@@ -6,19 +6,19 @@ from torch.optim import optimizer as opt
 from torch.optim.optimizer import Optimizer as OPT
 import torch.optim as torch_opt
 from torch import Tensor
-from ..core.block import Block, Sink
-from ..core.engine import Session
+from blox.core.block import Block, Sink
+from blox.core.engine import Session
 import typing as T
-from .module import ParameterProxy
+from blox.btorch.module import ParameterProxy
 from contextlib import contextmanager
-from ..utils import maybe_bind, maybe_or, maybe_error, const
+from blox.utils import maybe_bind, maybe_or, maybe_error, const
 from abc import abstractmethod
 from collections import deque
-from .module import TorchModule, ParameterIterator
+from blox.btorch.module import TorchModule, ParameterIterator
 import time
 from functools import partial
-from ..core.engine import Session, SessionError
-from .scheduler import TorchScheduler, LambdaLR
+from blox.core.engine import Session, SessionError
+from blox.btorch.scheduler import TorchScheduler, LambdaLR
 
 
 class TorchOptimizerError(SessionError):

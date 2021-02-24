@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..core._block import Port, _Block
+from blox.core._block import Port, _Block
 from collections import OrderedDict
 import typing as T
 from itertools import chain

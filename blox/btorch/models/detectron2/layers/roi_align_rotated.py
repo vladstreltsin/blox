@@ -1,5 +1,5 @@
 import detectron2.layers.roi_align_rotated as rar
-from .....btorch.module import TorchModule
+from blox.btorch.module import TorchModule
 
 
 class ROIAlignRotated(TorchModule):

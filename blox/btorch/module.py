@@ -1,13 +1,13 @@
 from __future__ import annotations
-from ..core.block import AtomicFunction, BlockError, Block
-from ..utils import raise_if, maybe_or
+from blox.core.block import AtomicFunction, BlockError, Block
+from blox.utils import raise_if, maybe_or
 from torch import nn
 import typing as T
 from itertools import chain
 from functools import partial
 from blox.core.namednode import NamedNodeMixin
 from operator import attrgetter
-from ..utils import EnumeratedMemo, instance_check, first
+from blox.utils import EnumeratedMemo, instance_check, first
 from more_itertools import prepend
 
 

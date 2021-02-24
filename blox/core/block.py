@@ -1,10 +1,10 @@
 from __future__ import annotations
-from .engine import Session, export_sessions, import_sessions, PortData, PortPuller
-from ._block import _Block, Port, BlockError
-from utils import maybe_or, camel_to_snake, fullname
+from blox.core.engine import Session, export_sessions, import_sessions, PortData, PortPuller
+from blox.core._block import _Block, Port, BlockError
+from blox.utils import maybe_or, camel_to_snake, fullname
 import typing as T
 from abc import abstractmethod
-from utils import maybe_error, maybe_bind
+from blox.utils import maybe_error, maybe_bind
 from functools import partial
 from enum import Enum
 from functools import update_wrapper

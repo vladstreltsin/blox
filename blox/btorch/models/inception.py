@@ -8,11 +8,11 @@ import torch.nn.functional as F
 from torch.jit.annotations import Optional
 from torch import Tensor
 # from .utils import load_state_dict_from_url
-from ...core.block import Function, Lambda
-from .. import nn as bnn
+from blox.core.block import Function, Lambda
+from blox.btorch import nn as bnn
 from functools import partial
-from ...utils import maybe_or, raise_if
-from ..util import Concat
+from blox.utils import maybe_or, raise_if
+from blox.btorch.util import Concat
 
 __all__ = ['Inception3', 'inception_v3', 'InceptionOutputs', '_InceptionOutputs']
 

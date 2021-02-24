@@ -1,10 +1,10 @@
 """ Taken from https://github.com/milesial/Pytorch-UNet/blob/master/unet """
 
 import torch.nn.functional as F
-from ... import nn as bnn
-from ...util import Concat
-from ....core.block import AtomicFunction, Function
-from ....utils import maybe_or
+from blox.btorch import nn as bnn
+from blox.btorch.util import Concat
+from blox.core.block import AtomicFunction, Function
+from blox.utils import maybe_or
 
 
 class DoubleConv(Function):

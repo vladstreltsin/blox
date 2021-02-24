@@ -1,13 +1,13 @@
 import imgaug.augmenters as ia
-from ..core.block import AtomicFunction, Block, Function
-from ..core.exceptions import BlockError
-from ..core.engine import Session
-from ..utils import maybe_or
+from blox.core.block import AtomicFunction, Block, Function
+from blox.core.exceptions import BlockError
+from blox.core.engine import Session
+from blox.utils import maybe_or
 from imgaug import HooksImages
 from abc import abstractmethod
 from functools import partial
 import typing as T
-from .batch import ToBatch, FromBatch, AUGMENTER_COLUMNS
+from blox.bimgaug.batch import ToBatch, FromBatch, AUGMENTER_COLUMNS
 
 
 class AugmenterError(BlockError):

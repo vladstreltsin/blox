@@ -1,6 +1,6 @@
 import torch
-from .. import nn as bnn
-from utils import maybe_or, raise_if
+from blox.btorch import nn as bnn
+from blox.utils import maybe_or, raise_if
 from ...core.block import Function, Lambda
 
 # from .utils import load_state_dict_from_url

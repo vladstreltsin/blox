@@ -1,8 +1,8 @@
 import torch.utils.data as torch_util_data
 from blox.core.block import AtomicFunction
-from ..core.generator import Generator
+from blox.core.generator import Generator
 import typing as T
-from ..utils import maybe_or
+from blox.utils import maybe_or
 
 
 class AtomicDataLoader(AtomicFunction):

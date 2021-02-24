@@ -6,19 +6,18 @@ from collections import OrderedDict
 from collections import defaultdict
 from itertools import chain
 import pickle
-
-from .namednode import NamedNodeMixin
-from ..utils import maybe_or, assert_identifier, camel_to_snake, parse_ports, first
 import threading
 from contextlib import contextmanager
-from ..utils import EnumeratedMemo, instance_check
 from operator import attrgetter
 from functools import partial
-from .device import DefaultDevice, BlockDevice
-from .exceptions import BlockError, PortError
+from blox.core.namednode import NamedNodeMixin
+from blox.utils import maybe_or, assert_identifier, camel_to_snake, parse_ports, first
+from blox.utils import EnumeratedMemo, instance_check
+from blox.core.device import DefaultDevice, BlockDevice
+from blox.core.exceptions import BlockError, PortError
 
 if T.TYPE_CHECKING:
-    from core.persist.base import Persister
+    from blox.core.persist.base import Persister
 
 
 # This is a nice trick to allow viewing inner blocks as "detached" in some contexts.
@@ -293,7 +292,7 @@ class _BlockPortsSection:
         # Blocks are not allowed
         if not isinstance(other, Port):
             # TODO it could be a good idea to have a block Factory instead of this
-            from .block import Const
+            from blox.core.block import Const
             if isinstance(other, _Block):
                 raise BlockError("Cannot set ports with blocks")
             other = Const(value=other).Out()
@@ -1395,51 +1394,51 @@ class _Block(NamedNodeMixin):
 class _PortOperatorMixin:
 
     def __add__(self, other: T.Any) -> Port:
-        from .block import Add
+        from blox.core.block import Add
         return Add(In=2, Out=1)(self, other)
 
     def __radd__(self, other) -> Port:
-        from .block import Add
+        from blox.core.block import Add
         return Add(In=2, Out=1)(other, self)
 
     def __sub__(self, other: T.Any) -> Port:
-        from .block import Sub
+        from blox.core.block import Sub
         return Sub(In=2, Out=1)(self, other)
 
     def __rsub__(self, other) -> Port:
-        from .block import Sub
+        from blox.core.block import Sub
         return Sub(In=2, Out=1)(other, self)
 
     def __mul__(self, other: T.Any) -> Port:
-        from .block import Mul
+        from blox.core.block import Mul
         return Mul(In=2, Out=1)(self, other)
 
     def __rmul__(self, other) -> Port:
-        from .block import Mul
+        from blox.core.block import Mul
         return Mul(In=2, Out=1)(other, self)
 
     def __truediv__(self, other) -> Port:
-        from .block import TrueDiv
+        from blox.core.block import TrueDiv
         return TrueDiv(In=2, Out=1)(self, other)
 
     def __rtruediv__(self, other) -> Port:
-        from .block import TrueDiv
+        from blox.core.block import TrueDiv
         return TrueDiv(In=2, Out=1)(other, self)
 
     def __floordiv__(self, other) -> Port:
-        from .block import FloorDiv
+        from blox.core.block import FloorDiv
         return FloorDiv(In=2, Out=1)(self, other)
 
     def __rfloordiv__(self, other) -> Port:
-        from .block import FloorDiv
+        from blox.core.block import FloorDiv
         return FloorDiv(In=2, Out=1)(other, self)
 
     def __matmul__(self, other) -> Port:
-        from .block import MatMul
+        from blox.core.block import MatMul
         return MatMul(In=2, Out=1)(self, other)
 
     def __rmatmul__(self, other) -> Port:
-        from .block import MatMul
+        from blox.core.block import MatMul
         return MatMul(In=2, Out=1)(other, self)
 
 
@@ -1569,7 +1568,7 @@ class Port(NamedNodeMixin, _PortOperatorMixin):
         self.block.push(self, session)
 
     def __assert_session(self, x):
-        from .engine import Session
+        from blox.core.engine import Session
         if not isinstance(x, Session):
             raise TypeError(x)
 

@@ -1,9 +1,9 @@
 from blox.core.persist.base import Persister, PersisterError
-from ...utils import join_not_none
-from ...core._block import Port, _Block
-from ...core.block import Sink
+from blox.utils import join_not_none
+from blox.core._block import Port, _Block
+from blox.core.block import Sink
 from torch.utils.tensorboard import SummaryWriter
-from ...core.engine import Session
+from blox.core.engine import Session
 from enum import Enum
 
 

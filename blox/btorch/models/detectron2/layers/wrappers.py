@@ -1,6 +1,6 @@
 import detectron2.layers.wrappers as wrp
-from .....core.block import AtomicFunction
-from .....btorch.module import TorchModule
+from blox.core.block import AtomicFunction
+from blox.btorch.module import TorchModule
 
 
 class Conv2d(TorchModule):

@@ -1,4 +1,4 @@
-from .block import AtomicFunction
+from blox.core.block import AtomicFunction
 import time
 
 

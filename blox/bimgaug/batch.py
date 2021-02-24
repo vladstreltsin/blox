@@ -1,7 +1,7 @@
-from ..core.block import Block, AtomicFunction, BlockError
+from blox.core.block import Block, AtomicFunction, BlockError
 from imgaug.augmentables import UnnormalizedBatch, Batch
 import typing as T
-from ..utils import maybe_or
+from blox.utils import maybe_or
 
 
 class ImgaugError(BlockError):

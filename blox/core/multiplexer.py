@@ -1,6 +1,6 @@
 from __future__ import annotations
-from .block import Block, BlockError, Port
-from .engine import Session, PortPuller
+from blox.core.block import Block, BlockError, Port
+from blox.core.engine import Session, PortPuller
 import typing as T
 from functools import partial
 
