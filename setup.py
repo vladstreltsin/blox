@@ -26,6 +26,9 @@ setup(
     find_packages=['blox'],
 
     install_requires=[
+        'networkx>=2.4',
+        'tabulate>=0.8.7'
+        'boltons>=20.2.1'
     ],
 
     extras_require={
