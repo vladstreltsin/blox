@@ -3,6 +3,9 @@ from __future__ import annotations
 from anytree.iterators import PreOrderIter
 import typing as tp
 from itertools import takewhile
+
+from blox.core.events import NodePreRename, NodePostRename, \
+    NodePreAttach, NodePostAttach, NodePostDetach, NodePreDetach
 from blox.etc.utils import camel_to_snake
 from blox.etc.errors import NameCollisionError
 from collections import defaultdict, OrderedDict
@@ -86,26 +89,9 @@ class NamedNode:
     def name(self, new_name):
 
         if new_name != self.name:
-
-            self._child_pre_rename_callback(new_name)
-            self._check_name(new_name)
-
-            # Check for name collision in parent
-            if self.parent is not None:
-                siblings = getattr(self.parent, '_children')[self.tag]
-                if new_name in siblings and siblings[new_name] is not self:
-                    raise NameCollisionError(f'Name "{new_name}" with tag "{self.tag}" exists in {self.parent}')
-
-            # Rename in parent
-            if self.parent is not None:
-                siblings = getattr(self.parent, '_children')[self.tag]
-                assert siblings.pop(self._name) is self
-                siblings[new_name] = self
-
-            # Rename self
-            self._name = new_name
-
-            self._child_post_rename_callback(new_name)
+            self.bubble(NodePreRename(node=self, parent=self.parent, new_name=new_name), start_nodes=[self])
+            self._name, old_name = new_name, self._name
+            self.bubble(NodePostRename(node=self, parent=self.parent, old_name=old_name), start_nodes=[self])
 
     @property
     def tag(self):
@@ -155,30 +141,18 @@ class NamedNode:
         if any(child is self for child in node.iter_path_reverse()):
             raise LoopError(f"Cannot set parent. {self} is parent of {node}")
 
-    def _detach(self, parent):
-        self._child_pre_detach_callback(parent)
-        getattr(parent, '_parent_pre_detach_callback')(self)
+    def _detach(self, parent: NamedNode):
 
-        siblings = getattr(parent, '_children')[self.tag]
-        assert siblings.pop(self.name) is self
+        self.bubble(NodePreDetach(node=self, parent=parent), start_nodes=[self, parent])
         self._parent = None
+        self.bubble(NodePostDetach(node=self, parent=parent), start_nodes=[self, parent])
 
-        self._child_post_detach_callback(parent)
-        getattr(parent, '_parent_post_detach_callback')(self)
+    def _attach(self, parent: NamedNode):
 
-    def _attach(self, parent):
-        self._child_pre_attach_callback(parent)
-        getattr(parent, '_parent_pre_attach_callback')(self)
-
-        siblings = getattr(parent, '_children')[self.tag]
-        if self.name in siblings:
-            raise NameCollisionError(f'Name "{self.name}" with tag "{self.tag}" exists in {parent}')
-
-        siblings[self.name] = self
+        # There is no link yet between parent and self
+        self.bubble(NodePreAttach(node=self, parent=parent), start_nodes=[self, parent])
         self._parent = parent
-
-        self._child_post_attach_callback(parent)
-        getattr(parent, '_parent_post_attach_callback')(self)
+        self.bubble(NodePostAttach(node=self, parent=parent), start_nodes=[self, parent])
 
     def path(self):
         yield from reversed(list(self.iter_path_reverse()))
@@ -244,42 +218,60 @@ class NamedNode:
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.full_name}>"
 
-    def _child_pre_detach_callback(self, parent):
-        """Method call before detaching from `parent`."""
-        pass
+    @staticmethod
+    def bubble(event, start_nodes: tp.Iterable[NamedNode]):
+        seen_nodes = set()
+        for start_node in start_nodes:
+            for node in start_node.iter_path_reverse():
+                if id(node) in seen_nodes:
+                    break
+                node.handle(event)
+                seen_nodes.add(id(node))
 
-    def _child_post_detach_callback(self, parent):
-        """Method call after detaching from `parent`."""
-        pass
+    def handle(self, event):
 
-    def _child_pre_attach_callback(self, parent):
-        """Method call before attaching to `parent`."""
-        pass
+        # Handle name collisions when renaming a child
+        if isinstance(event, NodePreRename):
+            parent, child, new_name = event.parent, event.node, event.new_name
 
-    def _child_post_attach_callback(self, parent):
-        """Method call after attaching to `parent`."""
-        pass
+            if parent is self:
+                siblings = self._children[child.tag]
+                if new_name in siblings and siblings[new_name] is not child:
+                    raise NameCollisionError(f'Name "{new_name}" with tag "{child.tag}" '
+                                             f'exists in {parent}')
 
-    def _parent_pre_detach_callback(self, child):
-        """ Method called by the parent before detaching the `child`. """
-        pass
+            elif child is self:
+                self._check_name(new_name)
 
-    def _parent_post_detach_callback(self, child):
-        """ Method called by the parent after detaching the `child`. """
-        pass
+        # Update new child name in children
+        elif isinstance(event, NodePostRename):
+            parent, child, old_name = event.parent, event.node, event.old_name
 
-    def _parent_pre_attach_callback(self, child):
-        """ Method called by the parent before attaching the `child`. """
-        pass
+            if parent is self:
+                siblings = self._children[child.tag]
+                assert siblings.pop(old_name) is child
+                siblings[child.name] = child
 
-    def _parent_post_attach_callback(self, child):
-        """ Method called by the parent after attaching the `child`. """
-        pass
+        # Make sure there is no name collision before attaching
+        elif isinstance(event, NodePreAttach):
+            parent, child = event.parent, event.node
+            if parent is self:
+                siblings = self._children[child.tag]
+                if child.name in siblings:
+                    raise NameCollisionError(f'Name "{child.name}" with tag "{child.tag}" exists in {parent}')
 
-    def _child_pre_rename_callback(self, new_name):
-        pass
+        # Update child addition in parent
+        elif isinstance(event, NodePostAttach):
+            parent, child = event.parent, event.node
+            if parent is self:
+                siblings = self._children[child.tag]
+                assert child.name not in siblings
+                siblings[child.name] = child
 
-    def _child_post_rename_callback(self, new_name):
-        pass
+        # Update child remove in parent
+        elif isinstance(event, NodePostDetach):
 
-
+            parent, child = event.parent, event.node
+            if parent is self:
+                siblings = self._children[child.tag]
+                assert siblings.pop(child.name) is child

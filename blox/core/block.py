@@ -6,6 +6,7 @@ from boltons.cacheutils import cachedproperty
 from blox.etc.utils import parse_ports
 from blox.core.transforms import BlockTransformsMixin
 from blox.core.toposort import BlockToposortMixin
+from blox.core.events import NodePreAttach, NodePreDetach
 
 
 class Block(NamedNode, LoggerMixin, BlockTransformsMixin, BlockToposortMixin):
@@ -31,15 +32,6 @@ class Block(NamedNode, LoggerMixin, BlockTransformsMixin, BlockToposortMixin):
     @cachedproperty
     def Out(self):
         return PortsView(self, self.children['Out'], 'Out')
-
-    def _child_pre_attach_callback(self, parent):
-        super(Block, self)._child_pre_attach_callback(parent)
-        assert isinstance(parent, Block), "Can attach blocks only to other blocks"
-        self.unlink()
-
-    def _child_pre_detach_callback(self, parent):
-        super(Block, self)._child_pre_detach_callback(parent)
-        self.unlink()
 
     def links(self):
         """ Returns all port links internal to the block.
@@ -87,6 +79,14 @@ class Block(NamedNode, LoggerMixin, BlockTransformsMixin, BlockToposortMixin):
 
     def __bool__(self):
         return True
+
+    def handle(self, event):
+        super(Block, self).handle(event)
+
+        # Remove all external links before attaching or detaching self
+        if isinstance(event, NodePreDetach) or isinstance(event, NodePreAttach):
+            if event.node is self:
+                self.unlink()
 
 
 class SectionView:

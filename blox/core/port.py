@@ -5,6 +5,8 @@ from blox.core.node import NamedNode
 from blox.etc.errors import PortConnectionError
 from boltons.cacheutils import cachedproperty
 from blox.core.operators import PortOperatorsMixin
+from blox.core.events import NodePreAttach, NodePreDetach
+from blox.core.events import LinkPostDisconnect, LinkPostConnect, LinkPreConnect, LinkPreDisconnect
 
 
 class Port(NamedNode, LoggerMixin, PortOperatorsMixin):
@@ -49,32 +51,36 @@ class Port(NamedNode, LoggerMixin, PortOperatorsMixin):
 
     @upstream.setter
     def upstream(self, port):
+        upstream = self.upstream
 
         # Remove self from upstream's downstream
-        if self.upstream is not None:
-            upstream = self.upstream
-            self._pre_disconnect_callback(upstream)
+        if upstream is not None:
+
+            self.bubble(LinkPreDisconnect(self.upstream, self), start_nodes=[self, upstream])
+
             del getattr(self.upstream, '_downstream')[id(self)]
             self._upstream = None
-            self._post_disconnect_callback(upstream)
+
+            self.bubble(LinkPostDisconnect(self.upstream, self), start_nodes=[self, upstream])
 
         if port is not None:
             if not isinstance(port, Port):
                 raise TypeError('Upstream must be a port')
 
+            self.bubble(LinkPreConnect(port, self), start_nodes=[port, self])
+
             if self.block is None:
                 raise PortConnectionError(f"Orphaned port {self} can't be connected")
-
             if port.block is None:
                 raise PortConnectionError(f"Can't set an orphaned port as upstream")
 
             self._check_directions(port)
 
             # Set upstream
-            self._pre_connect_callback(port)
             self._upstream = port
             getattr(port, '_downstream')[id(self)] = self
-            self._post_connect_callback(port)
+
+            self.bubble(LinkPostConnect(port, self), start_nodes=[port, self])
 
     def _check_directions(self, port):
         if (port.tag == 'In') and (self.tag == 'In'):
@@ -100,29 +106,22 @@ class Port(NamedNode, LoggerMixin, PortOperatorsMixin):
         else:
             raise PortConnectionError(f'Invalid tag: given ({self.tag}, {port.tag})')
 
-    def _child_pre_attach_callback(self, parent):
-        super(Port, self)._child_pre_attach_callback(parent)
+    def handle(self, event):
+        super(Port, self).handle(event)
 
-        from blox.core.block import Block
-        if not isinstance(parent, Block):
-            raise TypeError('Ports can only be attached to Blocks')
-        self.unlink()
+        if isinstance(event, NodePreAttach):
+            if event.node is self:
 
-    def _child_pre_detach_callback(self, parent):
-        super(Port, self)._child_pre_detach_callback(parent)
-        self.unlink()
+                # Make sure port is attached to block
+                from blox.core.block import Block
+                if not isinstance(event.parent, Block):
+                    raise TypeError('Ports can only be attached to Blocks')
 
-    def _pre_connect_callback(self, upstream):
-        pass
+                self.unlink()
 
-    def _post_connect_callback(self, upstream):
-        pass
-
-    def _pre_disconnect_callback(self, upstream):
-        pass
-
-    def _post_disconnect_callback(self, upstream):
-        pass
+        elif isinstance(event, NodePreDetach):
+            if event.node is self:
+                self.unlink()
 
     def unlink(self):
         self.upstream = None

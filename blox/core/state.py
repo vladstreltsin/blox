@@ -5,8 +5,9 @@ from blox.etc.errors import ComputeError
 
 class State:
 
-    def __init__(self):
+    def __init__(self, cleanup=True):
         self._data = {}
+        self.cleanup = cleanup
 
     def __contains__(self, port):
         return id(port) in self._data
@@ -21,6 +22,10 @@ class State:
 
     def __delitem__(self, port):
         del self._data[id(port)]
+
+    def maybe_cleanup(self, port):
+        if self.cleanup:
+            del self[port]
 
     def compute(self, port):
         """

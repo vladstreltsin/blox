@@ -1,4 +1,4 @@
-from blox.core.block import Block
+from blox.core.compute import AtomicFunction
 from enum import Enum
 
 
@@ -26,31 +26,51 @@ class UnaryOps(Enum):
     INVERT = 3,
 
 
-class UnaryOperator(Block):
+class UnaryOperator(AtomicFunction):
 
     def __init__(self, op):
         super(UnaryOperator, self).__init__(name=op.lower(), In=['in'], Out=['out'])
         self.op = UnaryOps[op.upper()]
 
 
-class BinaryOperator(Block):
+class BinaryOperator(AtomicFunction):
+
+    OPS = {
+        'add': '__add__',
+        'sub': '__sub__',
+        'mul': '__mul__',
+        'matmul': '__matmul__',
+        'truediv': '__truediv__',
+        'floordiv': '__floordiv__',
+        'mod': '__mod__',
+        'divmod': '__divmod__',
+        'pow': '__pow__',
+        'lshift': '__lshift__',
+        'rshift': '__rshift__',
+        'and': '__and__',
+        'xor': '__xor__',
+        'or': '__or__'
+    }
 
     def __init__(self, op):
         super(BinaryOperator, self).__init__(name=op.lower(), In=['in1', 'in2'], Out=['out'])
-        self.op = BinaryOps[op.upper()]
+        self.op = self.OPS[op.lower()]
+
+    def callback(self, in1, in2):
+        return getattr(in1, self.op)(in2)
 
 
-class GetOperator(Block):
+class GetOperator(AtomicFunction):
     def __init__(self):
         super(GetOperator, self).__init__(name='get', In=['in', 'sel'], Out=['out'])
 
 
-class ApplyOperator(Block):
+class ApplyOperator(AtomicFunction):
     def __init__(self):
         super(ApplyOperator, self).__init__(name='apply', In=['func', 'in'], Out=['out'])
 
 
-class Const(Block):
+class Const(AtomicFunction):
 
     def __init__(self, value):
         super(Const, self).__init__(name=None, Out='out')
