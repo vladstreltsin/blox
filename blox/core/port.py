@@ -16,7 +16,7 @@ class Port(NamedNode, LoggerMixin, PortOperatorsMixin):
 
         self._upstream = None
         self._downstream = dict()
-
+        
     @property
     def block(self):
         return self.parent

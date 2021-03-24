@@ -1,8 +1,14 @@
+from __future__ import annotations
 from blox.etc.errors import ComputeError
 from blox.core.block import Block
 from blox.core.events import LinkPostConnect, LinkPreDisconnect, NodePostRename
 import networkx as nx
 import typing as tp
+from collections import deque
+
+if tp.TYPE_CHECKING:
+    from blox.core.state import State
+    from blox.core.port import Port
 
 
 class PullResult:
@@ -82,7 +88,40 @@ class Computable(Block):
         super(Computable, self).__init__(*args, **kwargs)
         self._toposort = TopoSort(self)
 
-    def pull_generator(self, port, state):
+    def pull(self, port, state):
+        """
+        Compute a port's value using the pull protocol.
+        """
+        assert port in self.In or port in self.Out, f"Port {port} doesn't belong to block {self}"
+
+        stack = deque()
+        arrow = Next(port)
+
+        while True:
+            # We always enter the loop with an arrow
+            if isinstance(arrow, Done):
+
+                if len(stack) == 0:
+                    return arrow.value
+
+                else:
+                    arrow = stack[-1].send(arrow.value)
+                    if isinstance(arrow, Done):
+                        stack.pop()
+
+            elif isinstance(arrow, Next):
+
+                port = arrow.port
+                gen = port.block.pull_generator(port, state)
+
+                arrow = next(gen)
+                if isinstance(arrow, Next):
+                    stack.append(gen)
+
+            else:
+                raise ComputeError(f'Got unknown type for pull result {type(arrow)}')
+
+    def pull_generator(self, port: Port, state: State):
         assert port in self.In or port in self.Out, f"Port {port} doesn't belong to block {self}"
 
         if port in state:
@@ -96,7 +135,7 @@ class Computable(Block):
 
         yield Done(value)
 
-    def push(self, port, state):
+    def push(self, port: Port, state: State):
         assert port in self.In or port in self.Out, f"Port {port} doesn't belong to block {self}"
 
         if port not in state:
@@ -105,9 +144,10 @@ class Computable(Block):
         for p in port.downstream:
             state[p] = state[port]
 
-        state.maybe_cleanup(port)
+        if port.meta.get('propagate_cleanup'):
+            del state[port]
 
-    def propagate(self, state):
+    def propagate(self, state: State):
         # Push all inputs
         for port in self.In:
             port.block.push(port, state)
@@ -135,8 +175,11 @@ class Computable(Block):
 
 class Function(Computable):
 
-    def pull_generator(self, port, state):
+    def pull_generator(self, port: Port, state: State):
         assert port in self.In or port in self.Out, f"Port {port} doesn't belong to block {self}"
+
+        if port in state:
+            yield Done(state[port])
 
         # Input ports are simply pulled
         if port in self.In:
@@ -162,26 +205,37 @@ class Function(Computable):
 
             self.propagate(state)
 
-            assert port in state
-            yield Done(state[port])
+        assert port in state
+        yield Done(state[port])
 
 
 class AtomicFunction(Function):
 
-    def callback(self, *args, **kwargs):
+    def __init__(self, meta_keys: tp.Optional[tp.Iterable[str]]=None, *args, **kwargs):
+        super(AtomicFunction, self).__init__(*args, **kwargs)
+        self.meta_keys = list(x for x in (meta_keys or []))
+
+    def callback(self, ports: tp.Dict, meta: tp.Dict):
         raise NotImplementedError
 
-    def propagate(self, state):
+    def propagate(self, state: State):
 
         # Get inputs
-        kwargs = {port.name: state[port] for port in self.In}
+        ports = {port.name: state[port] for port in self.In}
+        meta = state.meta
+
+        # Make sure that all necessary meta keys are present
+        for key in self.meta_keys:
+            if key not in meta:
+                raise ComputeError(f'Missing required state meta key {key}')
 
         # Compute the function
-        result = self.callback(**kwargs)
+        result = self.callback(ports, meta)
 
         # Memory maintenance
         for port in self.In:
-            state.maybe_cleanup(port)
+            if port.meta.get('propagate_cleanup'):
+                del state[port]
 
         # Set outputs
         if len(self.Out) == 1:
@@ -192,3 +246,5 @@ class AtomicFunction(Function):
 
             for out_port, value in zip(self.Out, result):
                 state[out_port] = value
+
+

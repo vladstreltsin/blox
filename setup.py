@@ -29,6 +29,7 @@ setup(
         'networkx>=2.4',
         'tabulate>=0.8.7'
         'boltons>=20.2.1'
+        'scalpl>=0.4.0'
     ],
 
     extras_require={

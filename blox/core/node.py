@@ -11,6 +11,7 @@ from blox.etc.errors import NameCollisionError
 from collections import defaultdict, OrderedDict
 from blox.etc.errors import LoopError, TreeError, BadNameError
 from boltons.cacheutils import cachedproperty
+from collections import deque
 
 
 class TagView:
@@ -64,11 +65,16 @@ class ChildrenView:
         else:
             return False
 
+    def __iter__(self):
+        for tag in self._data:
+            yield self[tag]
+
     def __getitem__(self, tag):
         return TagView(self._data[tag])
 
 
 class NamedNode:
+    __slots__ = ('_name', '_tag', '_parent', '_children', '_tag_in_full_path', 'meta')
 
     separator = "/"
 
@@ -80,6 +86,8 @@ class NamedNode:
         self._tag_in_full_path = tag_in_full_path
 
         self._check_name(self._name)
+
+        self.meta = dict()  # To handle any extra data associated with the node
 
     @property
     def name(self):
@@ -167,8 +175,35 @@ class NamedNode:
         if self.parent is not None:
             yield from self.parent.path()
 
-    def descendants(self):
-        yield from tuple(PreOrderIter(self))[1:]
+    def descendants(self,
+                    filter_fn: tp.Optional[tp.Callable[[NamedNode], bool]]=None) \
+            -> tp.Generator[NamedNode, None, None]:
+        """
+        A generator to return descendant nodes (children, children-of-children, etc).
+
+        Parameters
+        ----------
+        filter_fn
+            A callable accepting an instance of NamedNode and returning a boolean used as a filter.
+
+        Yields
+        -------
+            Instances of NamedNode
+        """
+        queue = deque()
+        queue.append(self)
+
+        while True:
+            if not queue:
+                break
+
+            node = queue.popleft()
+
+            if node is not self and (not filter_fn or filter_fn(node)):
+                yield node
+
+            for tag_view in node.children:
+                queue.extend(tag_view)
 
     def root(self):
         node = self
@@ -197,16 +232,16 @@ class NamedNode:
         return self.separator.join(map(lambda x: x.tagged_name, self.path()))
 
     def rel_name(self, other: NamedNode) -> tp.Optional[str]:
-        """ Returns the block's name relative to the other block """
+        """ Returns the node's name relative to the other node """
 
         # The name relative to the "void" in the full name
         if other is None:
             return self.full_name
 
-        path = list(takewhile(lambda x: other.parent is not x, self.iter_path_reverse()))
+        path = list(takewhile(lambda x: other is not x, self.iter_path_reverse()))
 
         # This means that other is not an ancestor of self
-        if not path or path[-1] is not other:
+        if not path or path[-1].parent is not other:
             return None
 
         # return self.separator.join(reversed(list(map(lambda x: x.name, path))))
@@ -275,3 +310,4 @@ class NamedNode:
             if parent is self:
                 siblings = self._children[child.tag]
                 assert siblings.pop(child.name) is child
+

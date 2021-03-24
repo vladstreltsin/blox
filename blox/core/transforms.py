@@ -46,12 +46,14 @@ class BlockTransformsMixin:
 
     @staticmethod
     def _try_nesting(parent, child):
+
         """Try attaching child to parent fixing name conflicts if arise """
         assert parent is not None
         if child.parent is not parent:
             base_name = remove_trailing_digits(child.name)
             n = 0
 
+            # TODO - this is very slow for multiple operators in the same block
             while True:
                 name = base_name if n == 0 else f'{base_name}{n}'
                 if name not in parent.blocks:

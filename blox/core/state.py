@@ -1,59 +1,82 @@
-from collections import deque
-from blox.core.compute import Done, Next
-from blox.etc.errors import ComputeError
+from __future__ import annotations
+from abc import ABC, abstractmethod
+import typing as tp
+from collections import UserDict
+from scalpl import Cut
+from collections import namedtuple
+
+if tp.TYPE_CHECKING:
+    from blox.core.port import Port
+    from blox.core.block import Block
+
+ExportResult = namedtuple('ExportResult', field_names=['ports', 'meta'])
 
 
-class State:
+class Exporter:
+    """ Exports State to a dictionary """
 
-    def __init__(self, cleanup=True):
-        self._data = {}
-        self.cleanup = cleanup
+    def __init__(self, root: Block):
+        self.root = root
 
-    def __contains__(self, port):
-        return id(port) in self._data
+    def __call__(self, state: State):
 
-    def __getitem__(self, port):
-        if id(port) not in self._data:
-            raise KeyError(port)
-        return self._data[id(port)]
+        from blox.core.port import Port
+        from blox.core.filters import port_filter
 
-    def __setitem__(self, port, value):
-        self._data[id(port)] = value
+        ports = {}
+        meta = {**state.meta}
 
-    def __delitem__(self, port):
-        del self._data[id(port)]
+        for port in self.root.descendants(lambda p: port_filter(p) and p in state):
+            assert isinstance(port, Port)
+            ports[port.rel_name(self.root)] = state[port]
 
-    def maybe_cleanup(self, port):
-        if self.cleanup:
-            del self[port]
+        return ExportResult(ports=ports, meta=meta)
 
-    def compute(self, port):
-        """
-        Compute a port's value using the pull protocol.
-        """
-        stack = deque()
-        arrow = Next(port)
 
-        while True:
-            # We always enter the loop with an arrow
-            if isinstance(arrow, Done):
+class Importer:
+    """ Imports State from a dictionary """
 
-                if len(stack) == 0:
-                    return arrow.value
+    def __init__(self, root: Block):
+        self.root = root
 
-                else:
-                    arrow = stack[-1].send(arrow.value)
-                    if isinstance(arrow, Done):
-                        stack.pop()
+    def __call__(self, ports: tp.Dict[str, tp.Any], meta: tp.Dict[str, str]) -> State:
 
-            elif isinstance(arrow, Next):
+        from blox.core.port import Port
 
-                port = arrow.port
-                gen = port.block.pull_generator(port, self)
+        # This allows xpath-like access to blocs
+        cut = Cut({self.root.name: self.root}, sep=self.root.separator)
 
-                arrow = next(gen)
-                if isinstance(arrow, Next):
-                    stack.append(gen)
+        state = State()
+        state.meta.update(meta)
 
-            else:
-                raise ComputeError(f'Got unknown type for pull result {type(arrow)}')
+        for key, value in ports.items():
+
+            try:
+                port_name = self.root.separator.join([self.root.full_name, key])
+                port = cut[port_name]
+            except KeyError:
+                raise KeyError(f'No such port {port_name}')
+
+            if not isinstance(port, Port):
+                raise TypeError(f'Path {port_name} does not correspond to a port (given: {port})')
+
+            state[port] = value
+
+        return state
+
+
+class State(UserDict):
+    """ Stores the values of ports during computation """
+
+    def __init__(self):
+        super(State, self).__init__()
+        self.meta = dict()      # This will contain extra information about the state
+
+    def __getitem__(self, port: Port):
+        if port not in self:
+            raise KeyError(f'No value for port {port.full_name}')
+        return super(State, self).__getitem__(port)
+
+    def __call__(self, port: Port):
+        return port.block.pull(port, self)
+

@@ -28,9 +28,19 @@ class UnaryOps(Enum):
 
 class UnaryOperator(AtomicFunction):
 
+    OPS = {
+        'neg': '__neg__',
+        'pos': '__pos__',
+        'abs': '__abs__',
+        'invert': '__invert__',
+    }
+
     def __init__(self, op):
         super(UnaryOperator, self).__init__(name=op.lower(), In=['in'], Out=['out'])
-        self.op = UnaryOps[op.upper()]
+        self.op = self.OPS[op.lower()]
+
+    def callback(self, ports, meta):
+        return getattr(ports['in'], self.op)()
 
 
 class BinaryOperator(AtomicFunction):
@@ -56,18 +66,19 @@ class BinaryOperator(AtomicFunction):
         super(BinaryOperator, self).__init__(name=op.lower(), In=['in1', 'in2'], Out=['out'])
         self.op = self.OPS[op.lower()]
 
-    def callback(self, in1, in2):
-        return getattr(in1, self.op)(in2)
+    def callback(self, ports, meta):
+        return getattr(ports['in1'], self.op)(ports['in2'])
 
 
-class GetOperator(AtomicFunction):
-    def __init__(self):
-        super(GetOperator, self).__init__(name='get', In=['in', 'sel'], Out=['out'])
-
-
-class ApplyOperator(AtomicFunction):
-    def __init__(self):
-        super(ApplyOperator, self).__init__(name='apply', In=['func', 'in'], Out=['out'])
+# class GetOperator(AtomicFunction):
+#
+#     def __init__(self):
+#         super(GetOperator, self).__init__(name='get', In=['in', 'sel'], Out=['out'])
+#
+#
+# class ApplyOperator(AtomicFunction):
+#     def __init__(self):
+#         super(ApplyOperator, self).__init__(name='apply', In=['func', 'in'], Out=['out'])
 
 
 class Const(AtomicFunction):
@@ -75,3 +86,6 @@ class Const(AtomicFunction):
     def __init__(self, value):
         super(Const, self).__init__(name=None, Out='out')
         self._value = value
+
+    def callback(self, ports, meta):
+        return self._value
