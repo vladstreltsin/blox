@@ -39,7 +39,7 @@ class UnaryOperator(AtomicFunction):
         super(UnaryOperator, self).__init__(name=op.lower(), In=['in'], Out=['out'])
         self.op = self.OPS[op.lower()]
 
-    def callback(self, ports, meta):
+    def callback(self, ports, meta, params):
         return getattr(ports['in'], self.op)()
 
 
@@ -66,7 +66,7 @@ class BinaryOperator(AtomicFunction):
         super(BinaryOperator, self).__init__(name=op.lower(), In=['in1', 'in2'], Out=['out'])
         self.op = self.OPS[op.lower()]
 
-    def callback(self, ports, meta):
+    def callback(self, ports, meta, params):
         return getattr(ports['in1'], self.op)(ports['in2'])
 
 
@@ -87,5 +87,5 @@ class Const(AtomicFunction):
         super(Const, self).__init__(name=None, Out='out')
         self._value = value
 
-    def callback(self, ports, meta):
+    def callback(self, ports, meta, params):
         return self._value

@@ -211,11 +211,13 @@ class Function(Computable):
 
 class AtomicFunction(Function):
 
-    def __init__(self, meta_keys: tp.Optional[tp.Iterable[str]]=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(AtomicFunction, self).__init__(*args, **kwargs)
-        self.meta_keys = list(x for x in (meta_keys or []))
 
-    def callback(self, ports: tp.Dict, meta: tp.Dict):
+    def callback(self,
+                 ports: tp.Dict[str, tp.Any],
+                 meta: tp.Dict[str, tp.Any],
+                 params: tp.Dict[str, tp.Any]):
         raise NotImplementedError
 
     def propagate(self, state: State):
@@ -224,14 +226,13 @@ class AtomicFunction(Function):
         ports = {port.name: state[port] for port in self.In}
         meta = state.meta
 
-        # Make sure that all necessary meta keys are present
-        for key in self.meta_keys:
-            if key not in meta:
-                raise ComputeError(f'Missing required state meta key {key}')
+        # Collect parameters for the current block
+        params = state.params[self] if self in state.params else {}
 
         # Compute the function
-        result = self.callback(ports, meta)
+        result = self.callback(ports=ports, meta=meta, params=params)
 
+        # TODO this parameter should be overridable by params or meta
         # Memory maintenance
         for port in self.In:
             if port.meta.get('propagate_cleanup'):

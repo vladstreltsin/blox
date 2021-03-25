@@ -142,10 +142,10 @@ class PortOperatorsMixin:
 
     # Functional operators
 
-    def __getitem__(self, item):
-        from blox.core.special import GetOperator
-        return GetOperator()(self, self._make_port(item))
-
-    def __call__(self, item):
-        from blox.core.special import ApplyOperator
-        return ApplyOperator()(self, self._make_port(item))
+    # def __getitem__(self, item):
+    #     from blox.core.special import GetOperator
+    #     return GetOperator()(self, self._make_port(item))
+    #
+    # def __call__(self, item):
+    #     from blox.core.special import ApplyOperator
+    #     return ApplyOperator()(self, self._make_port(item))

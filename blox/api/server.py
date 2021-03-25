@@ -23,10 +23,12 @@ class BloxServer:
     def __call__(self,
                  targets: tp.Iterable[str],
                  ports: tp.Dict[str, tp.Any],
-                 meta: tp.Dict[str, str]) -> ExportResult:
+                 meta: tp.Dict[str, tp.Any],
+                 params: tp.Dict[str, tp.Dict[str, tp.Any]]) -> ExportResult:
 
         targets = list(targets)
         ports = ports.copy()
+        params = params.copy()
 
         # Fill in the targets to compute. This is done because we want to convert
         # them targets to Ports.
@@ -34,7 +36,7 @@ class BloxServer:
             ports[target] = Target(target)
 
         # Construct the initial state
-        state: State = Importer(self.world)(ports, meta)
+        state: State = Importer(self.world)(ports, meta, params)
 
         # Pop out all ports that need to be computed
         target_ports = {}
