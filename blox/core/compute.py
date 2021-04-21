@@ -1,7 +1,7 @@
 from __future__ import annotations
 from blox.etc.errors import ComputeError
 from blox.core.block import Block
-from blox.core.events import LinkPostConnect, LinkPreDisconnect, NodePostRename
+from blox.core.events import LinkPostConnect, LinkPreDisconnect
 import networkx as nx
 import typing as tp
 from collections import deque
@@ -247,5 +247,17 @@ class AtomicFunction(Function):
 
             for out_port, value in zip(self.Out, result):
                 state[out_port] = value
+
+
+class Source(Computable):
+
+    def __init__(self, name=None):
+        super(Source, self).__init__(name=name, In=None, Out='out')
+
+
+class Sink(Computable):
+
+    def __init__(self, name=None):
+        super(Sink, self).__init__(name=name, In='in', Out=None)
 
 

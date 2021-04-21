@@ -1,6 +1,5 @@
 """ This is my rewrite of the anytree library  """
 from __future__ import annotations
-from anytree.iterators import PreOrderIter
 import typing as tp
 from itertools import takewhile
 

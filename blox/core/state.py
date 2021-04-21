@@ -15,8 +15,9 @@ ExportResult = namedtuple('ExportResult', field_names=['ports', 'meta', 'params'
 class Exporter:
     """ Exports State to a dictionary """
 
-    def __init__(self, root: Block):
+    def __init__(self, root: Block, all_ports=False):
         self.root = root
+        self.all_ports = all_ports
 
     def __call__(self, state: State):
 
@@ -29,6 +30,11 @@ class Exporter:
 
         for port in self.root.descendants(lambda p: port_filter(p) and p in state):
             assert isinstance(port, Port)
+
+            # Skip input ports that have an upstream
+            if not self.all_ports and port.tag == 'In' and port.upstream is not None:
+                continue
+
             ports[port.rel_name(self.root)] = state[port]
 
         for block in self.root.descendants(lambda b: block_filter(b) and b in state.params):
@@ -89,7 +95,11 @@ class Importer:
 class State(UserDict):
     """ Stores the values of ports during computation """
 
-    def __init__(self):
+    def __init__(self,
+                 ports: tp.Optional[tp.Dict[Port, tp.Any]] = None,
+                 meta: tp.Optional[tp.Dict[str, tp.Any]] = None,
+                 params: tp.Optional[tp.Dict[Block, tp.Dict[str, tp.Any]]] = None):
+
         super(State, self).__init__()
 
         # This will contain extra global parameters
@@ -98,10 +108,27 @@ class State(UserDict):
         # This will contain per-block parameters
         self.params: tp.Dict[Block, tp.Dict[str, tp.Any]] = defaultdict(dict)
 
+        # Init parameters
+        for port, value in (ports or {}).items():
+            self[port] = value
+
+        for key, value in (meta or {}).items():
+            self.meta[key] = value
+
+        for block, value in (params or {}).items():
+            self.params[block] = value
+
     def __getitem__(self, port: Port):
         if port not in self:
             raise KeyError(f'No value for port {port.full_name}')
         return super(State, self).__getitem__(port)
 
-    def __call__(self, port: Port):
-        return port.block.pull(port, self)
+    def __call__(self, port_or_ports: tp.Union[Port, tp.Iterable[Port]]):
+        from blox.core.port import Port
+
+        if isinstance(port_or_ports, Port):
+            port = port_or_ports
+            return port.block.pull(port, self)
+
+        else:
+            return [port.block.pull(port, self) for port in port_or_ports]

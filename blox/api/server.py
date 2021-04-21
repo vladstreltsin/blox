@@ -6,7 +6,7 @@ import typing as tp
 from collections import namedtuple
 from dataclasses import dataclass
 import traceback
-
+import sys
 
 @dataclass
 class Target:
@@ -51,6 +51,7 @@ class BloxServer:
                 state(port)
 
             except Exception as e:
+                traceback.print_exc(file=sys.stdout)
                 state.meta['exception'] = str(e)
                 state.meta['failed_target'] = target
                 break
