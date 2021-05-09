@@ -7,7 +7,7 @@ import typing as tp
 from collections import deque
 
 if tp.TYPE_CHECKING:
-    from blox.core.state import State
+    from blox.core.state import State, MetaDict, ParamsDict, PortsDict
     from blox.core.port import Port
 
 
@@ -215,19 +215,25 @@ class AtomicFunction(Function):
         super(AtomicFunction, self).__init__(*args, **kwargs)
 
     def callback(self,
-                 ports: tp.Dict[str, tp.Any],
-                 meta: tp.Dict[str, tp.Any],
-                 params: tp.Dict[str, tp.Any]):
+                 ports: PortsDict,
+                 meta: MetaDict,
+                 params: ParamsDict):
         raise NotImplementedError
 
     def propagate(self, state: State):
 
-        # Get inputs
-        ports = {port.name: state[port] for port in self.In}
-        meta = state.meta
+        from blox.core.state import MetaDict, ParamsDict, PortsDict
 
-        # Collect parameters for the current block
-        params = state.params[self] if self in state.params else {}
+        # Get inputs
+        ports = PortsDict()
+        for port in self.In:
+            ports[port] = state[port]
+
+        # Get block parameters
+        params: ParamsDict = state[self].params
+
+        # Get global parameters
+        meta: MetaDict = state.meta
 
         # Compute the function
         result = self.callback(ports=ports, meta=meta, params=params)

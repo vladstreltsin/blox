@@ -1,60 +1,57 @@
 from __future__ import annotations
 from blox.core.compute import Computable
-from blox.core.state import State, Importer, Exporter, ExportResult
+from blox.core.state import State, XPathState
 from blox.core.port import Port
 import typing as tp
 from collections import namedtuple
 from dataclasses import dataclass
 import traceback
 import sys
+from dataclasses import field
+from collections import OrderedDict
+
 
 @dataclass
 class Target:
     """ This is used as a marker for ports that need to be computed """
-    target: str
+    target_name: str
 
 
-class BloxServer:
-    """ Converts a Blox system to a server """
+class XPathServer:
 
-    def __init__(self, world: Computable):
-        self.world = world
+    def __init__(self, root_block: Computable):
+        self.root_block = root_block
 
-    def __call__(self,
-                 targets: tp.Iterable[str],
-                 ports: tp.Dict[str, tp.Any],
-                 meta: tp.Dict[str, tp.Any],
-                 params: tp.Dict[str, tp.Dict[str, tp.Any]]) -> ExportResult:
+    def __call__(self, xpstate: XPathState, target_or_targets: tp.Union[str, tp.Iterable[str]]) -> XPathState:
 
-        targets = list(targets)
-        ports = ports.copy()
-        params = params.copy()
+        # Make a copy because we are going to change some entries in it
+        xpstate = xpstate.copy()
 
-        # Fill in the targets to compute. This is done because we want to convert
-        # them targets to Ports.
-        for target in targets:
-            ports[target] = Target(target)
+        if isinstance(target_or_targets, str):
+            target_or_targets = [target_or_targets]
+        else:
+            target_or_targets = list(target_or_targets)
 
-        # Construct the initial state
-        state: State = Importer(self.world)(ports, meta, params)
+        # Place sentinels on the target ports
+        for target_name in target_or_targets:
+            xpstate[target_name] = Target(target_name=target_name)
 
-        # Pop out all ports that need to be computed
-        target_ports = {}
-        for port in list(state.keys()):
+        # Convert xpath-state to a normal state
+        state = xpstate.to_state(self.root_block)
+
+        # Extract all ports whose value is an instance of Target
+        target_ports = dict()
+        for port in list(state.ports()):
             if isinstance(state[port], Target):
-                target = state.pop(port).target
-                target_ports[target] = port
+                target_name = state[port.block].ports.pop(port).target_name
+                target_ports[target_name] = port
 
-        # Compute ports. If an error occurs, export the state and return an error
-        for target, port in target_ports.items():
-            try:
-                state(port)
+        # Compute ports. If an error is raised an exception will be thrown here
+        for target_name, port in target_ports.items():
+            state(port)
 
-            except Exception as e:
-                traceback.print_exc(file=sys.stdout)
-                state.meta['exception'] = str(e)
-                state.meta['failed_target'] = target
-                break
+        return state.to_xpath_state(self.root_block)
 
-        return Exporter(self.world)(state)
-
+# class JSONServer:
+#
+#     def __init__(self, root_block: Computable):

@@ -40,7 +40,8 @@ class UnaryOperator(AtomicFunction):
         self.op = self.OPS[op.lower()]
 
     def callback(self, ports, meta, params):
-        return getattr(ports['in'], self.op)()
+        in1 = self.In()
+        return getattr(ports[in1], self.op)()
 
 
 class BinaryOperator(AtomicFunction):
@@ -67,11 +68,11 @@ class BinaryOperator(AtomicFunction):
         self.op = self.OPS[op.lower()]
 
     def callback(self, ports, meta, params):
-        return getattr(ports['in1'], self.op)(ports['in2'])
+        in1, in2 = self.In()
+        return getattr(ports[in1], self.op)(ports[in2])
 
 
 # class GetOperator(AtomicFunction):
-#
 #     def __init__(self):
 #         super(GetOperator, self).__init__(name='get', In=['in', 'sel'], Out=['out'])
 #

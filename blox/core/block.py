@@ -9,7 +9,7 @@ from blox.core.toposort import BlockToposortMixin
 from blox.core.events import NodePreAttach, NodePreDetach
 
 
-class Block(NamedNode, LoggerMixin, BlockTransformsMixin, BlockToposortMixin):
+class Block(NamedNode, BlockTransformsMixin):
 
     def __init__(self, name=None, In=None, Out=None):
         super(Block, self).__init__(name=name, tag='blocks')
@@ -76,6 +76,13 @@ class Block(NamedNode, LoggerMixin, BlockTransformsMixin, BlockToposortMixin):
             del getattr(self, section)[item]
         else:
             del self.blocks[key]
+
+    def __contains__(self, key):
+        if isinstance(key, str) and ':' in key:
+            section, item = key.split(':', maxsplit=1)
+            return item in getattr(self, section)
+        else:
+            return key in self.blocks
 
     def __bool__(self):
         return True
